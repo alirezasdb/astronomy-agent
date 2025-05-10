@@ -133,7 +133,7 @@ def display_articles(articles):
         print(f"    Link: {art['url']}")
 
 def check_keywords(articles):
-    print("\n Do you have a specific question related to ypur searched field? (yes/no)")
+    print("\n Do you have a specific question related to your searched field? (yes/no)")
     if input(">> ").strip().lower() != "yes":
         return
     print(f"\n Choose a keyword to check from the list below:\n{', '.join(ASTRO_KEYWORDS)}")
