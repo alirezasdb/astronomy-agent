@@ -6,7 +6,6 @@ from bs4 import BeautifulSoup
 
 CACHE_FILE = "/content/astro_cache.pkl"
 
-# کلید API را در یک متغیر ذخیره کنید
 API_KEY = "wp3LCt8Ua43cRwr29ibf7jfttMgdvDWGNuYYMMMD"
 
 ASTRO_KEYWORDS = [
@@ -48,7 +47,7 @@ def search_nasa(query, limit=5):
 
 
 def search_arxiv(query, limit=5):
-    print(f"\n🔍 Searching '{query}' in arXiv...")
+    print(f"\n Searching '{query}' in arXiv...")
     url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={limit}"
     response = requests.get(url)
     if response.status_code != 200:
@@ -67,7 +66,7 @@ def search_arxiv(query, limit=5):
     return results
 
 def search_pubmed(query, limit=5):
-    print(f"\n Searching '{query}' in PubMed...")
+    print(f"\n🔍 Searching '{query}' in PubMed...")
     url = f"https://pubmed.ncbi.nlm.nih.gov/api/query?search={query}&limit={limit}"
     response = requests.get(url)
     if response.status_code != 200:
@@ -106,7 +105,8 @@ def search_scholar(query, limit=5):
             "url": link
         })
     return results
-    
+
+
 def search_crossref(query, limit=5):
     print(f"\n Searching '{query}' in CrossRef...")
     url = f"https://api.crossref.org/works?query={query}&rows={limit}"
@@ -155,10 +155,11 @@ def run_agent():
         "nasa": search_nasa,
         "pubmed": search_pubmed,
         "scholar": search_scholar,
+        "crossref": search_crossref,  
     }
 
     while True:
-        print("\n Which site would you like to use? (arxiv / nasa / pubmed / scholar) or type 'exit' to quit:")
+        print("\n Which site would you like to use? (arxiv / nasa / pubmed / scholar / crossref) or type 'exit' to quit:")
         site = input(">> ").strip().lower()
         if site == "exit":
             print("Exiting...")
