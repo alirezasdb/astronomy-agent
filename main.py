@@ -27,25 +27,6 @@ def save_cache(cache):
         pickle.dump(cache, f)
 
 
-def search_nasa(query, limit=5):
-    print(f"\n Searching '{query}' in NASA...")
-    url = f"https://api.nasa.gov/planetary/apod?api_key={API_KEY}&query={query}&limit={limit}"
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("❌ Error accessing NASA API.")
-        return []
-    data = response.json()
-    results = []
-    for item in data:
-        results.append({
-            "title": item.get("title", "No title"),
-            "authors": item.get("authors", ["Unknown"]),
-            "year": item.get("date", "Unknown").split("-")[0],
-            "url": item.get("url", "")
-        })
-    return results
-
-
 def search_arxiv(query, limit=5):
     print(f"\n Searching '{query}' in arXiv...")
     url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={limit}"
@@ -152,7 +133,6 @@ def run_agent():
     cache = load_cache()
     sources = {
         "arxiv": search_arxiv,
-        "nasa": search_nasa,
         "pubmed": search_pubmed,
         "scholar": search_scholar,
         "crossref": search_crossref,  
