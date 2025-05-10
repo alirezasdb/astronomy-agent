@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 
 CACHE_FILE = "/content/astro_cache.pkl"
 
+# کلید API را در یک متغیر ذخیره کنید
 API_KEY = "wp3LCt8Ua43cRwr29ibf7jfttMgdvDWGNuYYMMMD"
 
 ASTRO_KEYWORDS = [
@@ -47,7 +48,7 @@ def search_nasa(query, limit=5):
 
 
 def search_arxiv(query, limit=5):
-    print(f"\n Searching '{query}' in arXiv...")
+    print(f"\n🔍 Searching '{query}' in arXiv...")
     url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={limit}"
     response = requests.get(url)
     if response.status_code != 200:
@@ -62,6 +63,47 @@ def search_arxiv(query, limit=5):
             "authors": [author.find("name").text for author in entry.find_all("author")],
             "year": entry.published.text[:4],
             "url": entry.id.text
+        })
+    return results
+
+def search_pubmed(query, limit=5):
+    print(f"\n Searching '{query}' in PubMed...")
+    url = f"https://pubmed.ncbi.nlm.nih.gov/api/query?search={query}&limit={limit}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("❌ Error accessing PubMed.")
+        return []
+    data = response.json()
+    results = []
+    for item in data['articles']:
+        results.append({
+            "title": item.get("title", "No title"),
+            "authors": item.get("authors", ["Unknown"]),
+            "year": item.get("date", "Unknown").split("-")[0],
+            "url": item.get("url", "")
+        })
+    return results
+
+def search_scholar(query, limit=5):
+    print(f"\n Searching '{query}' in Google Scholar...")
+    url = f"https://scholar.google.com/scholar?q={query}&limit={limit}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("❌ Error accessing Google Scholar.")
+        return []
+    soup = BeautifulSoup(response.content, "html.parser")
+    entries = soup.find_all("div", class_="gs_ri")
+    results = []
+    for entry in entries:
+        title = entry.find("h3").text
+        authors = entry.find("div", class_="gs_a").text
+        year = entry.find("div", class_="gs_a").text.split('-')[-1].strip()
+        link = entry.find("a")["href"]
+        results.append({
+            "title": title.strip(),
+            "authors": authors.strip(),
+            "year": year,
+            "url": link
         })
     return results
 
@@ -93,10 +135,12 @@ def run_agent():
     sources = {
         "arxiv": search_arxiv,
         "nasa": search_nasa,
+        "pubmed": search_pubmed,
+        "scholar": search_scholar,
     }
 
     while True:
-        print("\n Which site would you like to use? (arxiv / nasa) or type 'exit' to quit:")
+        print("\n Which site would you like to use? (arxiv / nasa / pubmed / scholar) or type 'exit' to quit:")
         site = input(">> ").strip().lower()
         if site == "exit":
             print("Exiting...")
