@@ -38,3 +38,6 @@ A Python-based agent that searches for articles on astronomy topics across vario
 - `!python3 /content/astronomy-agent/main.py`
 
 
+![Screenshot 2025-05-10 012624](https://github.com/user-attachments/assets/ff6d9b53-a433-42ab-ac96-2ec04940f836)
+
+
