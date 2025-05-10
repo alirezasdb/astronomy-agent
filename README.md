@@ -9,13 +9,13 @@ A Python-based agent that searches for articles on astronomy topics across vario
 - Check for specific astronomy keywords in article titles.
   
 ##astro-agent/
--│
--├── data/
--│   └── astro_cache.pkl
--├── main.py
--├── requirements.txt
--├── README.md
--└── .gitignore
+-`│
+├── data/
+│   └── astro_cache.pkl
+├── main.py
+├── requirements.txt
+├── README.md
+└── .gitignore`
 
 ## Requirements
 
