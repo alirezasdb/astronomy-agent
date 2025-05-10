@@ -33,6 +33,7 @@ A Python-based agent that searches for articles on astronomy topics across vario
 - `!pip install -r /content/astronomy-agent/requirements.txt`
 
 3-Running in Google Colab
+- `!python3 main.py`
 - ## if you are in colab sometimes you must run this code:
 - `!python3 /content/astronomy-agent/main.py`
 
