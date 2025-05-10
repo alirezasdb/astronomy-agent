@@ -25,7 +25,7 @@ A Python-based agent that searches for articles on astronomy topics across vario
 ## Setup
 
 1. Clone the repository:
-- `!git clone https://github.com/alirezasdb/astronomy-agent/tree/main`
+- `!git clone https://github.com/alirezasdb/astronomy-agent.git`
 - `%cd astro-agent`
 
 2. Install dependencies:
