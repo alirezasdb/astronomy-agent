@@ -23,7 +23,7 @@ A Python-based agent that searches for articles on astronomy topics across vario
 - `pip install -r requirements.txt`
 
 3-Running in Google Colab
-To run this project in Google Colab, simply upload the main.py file and run the script with the following command:
+- To run this project in Google Colab, simply upload the main.py file and run the script with the following command:
 - `!python3 main.py`
 
 
