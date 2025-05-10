@@ -1,4 +1,4 @@
-# Astronomy Agent
+# Astronomy Agent 🪐
 
 A Python-based agent that searches for articles on astronomy topics across various sources (arXiv, DOAJ, CrossRef, PubMed, Google Scholar) and provides information about astronomical keywords.
 
@@ -26,7 +26,6 @@ A Python-based agent that searches for articles on astronomy topics across vario
 
 1. Clone the repository:
 - `!git clone https://github.com/alirezasdb/astronomy-agent.git`
-- `%cd astro-agent`
 
 2. Install dependencies:
 - `!pip install -r requirements.txt`
