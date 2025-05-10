@@ -6,8 +6,6 @@ from bs4 import BeautifulSoup
 
 CACHE_FILE = "/content/astro_cache.pkl"
 
-API_KEY = "wp3LCt8Ua43cRwr29ibf7jfttMgdvDWGNuYYMMMD"
-
 ASTRO_KEYWORDS = [
     "temperature", "pressure", "velocity", "density", "radiation",
     "gravity", "mass", "magnetic field", "luminosity", "composition",
