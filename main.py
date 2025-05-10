@@ -1,117 +1,212 @@
 import requests
-from bs4 import BeautifulSoup
 import pickle
 import os
+import time
+from bs4 import BeautifulSoup
 
-SEARCH_SOURCES = {
-    'arxiv': 'https://arxiv.org/search/?query={}&searchtype=all&source=header',
-    'doaj': 'https://doaj.org/search?qs={}',
-    'crossref': 'https://api.crossref.org/works?query={}',
-    'pubmed': 'https://pubmed.ncbi.nlm.nih.gov/?term={}',
-    'google_scholar': 'https://scholar.google.com/scholar?q={}'
-}
+CACHE_FILE = "/content/astro_cache.pkl"
 
-def search_arxiv(query):
-    url = SEARCH_SOURCES['arxiv'].format(query)
+
+ASTRO_KEYWORDS = [
+    "temperature", "pressure", "velocity", "density", "radiation",
+    "gravity", "mass", "magnetic field", "luminosity", "composition",
+    "rotation", "orbital period", "distance", "size", "brightness",
+    "spectral type", "metallicity", "expansion", "collapse", "fusion"
+]
+
+
+def load_cache():
+    if os.path.exists(CACHE_FILE):
+        with open(CACHE_FILE, "rb") as f:
+            return pickle.load(f)
+    return {}
+
+def save_cache(cache):
+    with open(CACHE_FILE, "wb") as f:
+        pickle.dump(cache, f)
+
+
+def search_arxiv(query, limit=5):
+    print(f"\n🔍 Searching '{query}' in arXiv...")
+    url = f"http://export.arxiv.org/api/query?search_query=all:{query}&start=0&max_results={limit}"
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles = []
-    for item in soup.find_all('li', class_='arxiv-result'):
-        title = item.find('p', class_='title').text.strip()
-        authors = item.find('p', class_='authors').text.strip()
-        link = item.find('a')['href']
-        articles.append({'title': title, 'authors': authors, 'link': f'https://arxiv.org{link}'})
-    return articles
+    if response.status_code != 200:
+        print("❌ Error accessing arXiv.")
+        return []
+    soup = BeautifulSoup(response.content, "xml")
+    entries = soup.find_all("entry")
+    results = []
+    for entry in entries:
+        results.append({
+            "title": entry.title.text.strip(),
+            "authors": [author.find("name").text for author in entry.find_all("author")],
+            "year": entry.published.text[:4],
+            "url": entry.id.text
+        })
+    return results
 
-def search_doaj(query):
-    url = SEARCH_SOURCES['doaj'].format(query)
+def search_doaj(query, limit=5):
+    print(f"🔍 Searching for '{query}' in DOAJ...")
+    url = f"https://doaj.org/api/v2/search/articles/{query}"
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles = []
-    for item in soup.find_all('article'):
-        title = item.find('h2').text.strip()
-        authors = item.find('span', class_='author').text.strip() if item.find('span', class_='author') else 'Unknown'
-        link = item.find('a')['href']
-        articles.append({'title': title, 'authors': authors, 'link': link})
-    return articles
+
+    try:
+        data = response.json()
+        if isinstance(data, list):
+            results = []
+            for item in data[:limit]:
+                if isinstance(item, dict):
+                    bibjson = item.get("bibjson", {})
+                    results.append({
+                        "title": bibjson.get("title", "No title"),
+                        "authors": ", ".join([a.get("name", "") for a in bibjson.get("author", [])]),
+                        "year": bibjson.get("year", "Unknown"),
+                        "url": bibjson.get("link", [{}])[0].get("url", "")
+                    })
+            return results
+        else:
+            print("❌ Unexpected DOAJ data format.")
+            return []
+    except Exception as e:
+        print("❌ Failed to parse DOAJ response:", e)
+        return []
 
 
-def search_crossref(query):
-    url = SEARCH_SOURCES['crossref'].format(query)
+def search_crossref(query, limit=5):
+    print(f"\n Searching '{query}' in CrossRef...")
+    url = f"https://api.crossref.org/works?query={query}&rows={limit}"
     response = requests.get(url)
-    data = response.json()
-    articles = []
-    for item in data['message']['items']:
-        title = item['title'][0]
-        authors = ', '.join([author['given'] + ' ' + author['family'] for author in item['author']])
-        link = item['URL']
-        articles.append({'title': title, 'authors': authors, 'link': link})
-    return articles
-
-def search_pubmed(query):
-    url = SEARCH_SOURCES['pubmed'].format(query)
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles = []
-    for item in soup.find_all('article'):
-        title = item.find('a', class_='title').text.strip()
-        authors = item.find('div', class_='authors').text.strip() if item.find('div', class_='authors') else 'Unknown'
-        link = item.find('a')['href']
-        articles.append({'title': title, 'authors': authors, 'link': f'https://pubmed.ncbi.nlm.nih.gov{link}'})
-    return articles
+    if response.status_code != 200:
+        print("❌ Error accessing CrossRef.")
+        return []
+    data = response.json().get("message", {}).get("items", [])
+    results = []
+    for item in data:
+        results.append({
+            "title": item.get("title", ["No title"])[0],
+            "authors": [f"{a.get('given', '')} {a.get('family', '')}" for a in item.get("author", [])] if "author" in item else [],
+            "year": item.get("issued", {}).get("date-parts", [[None]])[0][0],
+            "url": item.get("URL", "")
+        })
+    return results
 
 
-def search_google_scholar(query):
-    url = SEARCH_SOURCES['google_scholar'].format(query)
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
-    articles = []
-    for item in soup.find_all('div', class_='gs_r gs_or gs_scl'):
-        title = item.find('h3').text.strip()
-        authors = item.find('div', class_='gs_a').text.strip()
-        link = item.find('a')['href']
-        articles.append({'title': title, 'authors': authors, 'link': link})
-    return articles
+def search_pubmed(query, limit=5):
+    print(f"\n Searching '{query}' in PubMed...")
+    search_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=pubmed&term={query}&retmax={limit}&retmode=json"
+    search_res = requests.get(search_url)
+    if search_res.status_code != 200:
+        print("❌ Error accessing PubMed.")
+        return []
+    ids = search_res.json()["esearchresult"]["idlist"]
+    if not ids:
+        return []
+    ids_str = ",".join(ids)
+    fetch_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&id={ids_str}&retmode=json"
+    fetch_res = requests.get(fetch_url)
+    summaries = fetch_res.json().get("result", {})
+    results = []
+    for pid in ids:
+        summary = summaries.get(pid, {})
+        results.append({
+            "title": summary.get("title", "No title"),
+            "authors": [a["name"] for a in summary.get("authors", [])] if "authors" in summary else [],
+            "year": summary.get("pubdate", "").split(" ")[0],
+            "url": f"https://pubmed.ncbi.nlm.nih.gov/{pid}/"
+        })
+    return results
+
+def search_google_scholar(query, limit=5):
+    print(f"\n Searching '{query}' in Google Scholar...")
+    headers = {"User-Agent": "Mozilla/5.0"}
+    url = f"https://scholar.google.com/scholar?q={query}"
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        print("❌ Error accessing Google Scholar.")
+        return []
+    soup = BeautifulSoup(response.text, "html.parser")
+    entries = soup.select(".gs_ri")
+    results = []
+    for entry in entries[:limit]:
+        title_el = entry.select_one(".gs_rt")
+        title = title_el.text if title_el else "No title"
+        url = title_el.a["href"] if title_el and title_el.a else ""
+        author_year = entry.select_one(".gs_a").text if entry.select_one(".gs_a") else ""
+        year = author_year[-4:] if author_year[-4:].isdigit() else "N/A"
+        authors = author_year.split("-")[0].strip().split(",") if "-" in author_year else []
+        results.append({
+            "title": title,
+            "authors": authors,
+            "year": year,
+            "url": url
+        })
+    return results
 
 
-def search_articles(query):
-    all_articles = []
-    
-
-    cache_file = 'data/astro_cache.pkl'
-    if os.path.exists(cache_file):
-        with open(cache_file, 'rb') as f:
-            cached_data = pickle.load(f)
+def display_articles(articles):
+    for i, art in enumerate(articles, 1):
+        print(f"\n{i}.  {art['title']} ({art['year']})")
+        print(f"    Authors: {', '.join(art['authors'])}")
+        print(f"    Link: {art['url']}")
+        
+def check_keywords(articles):
+    print("\n Do you have a specific question related to astronomy? (yes/no)")
+    if input(">> ").strip().lower() != "yes":
+        return
+    print(f"\n🪐 Choose a keyword to check from the list below:\n{', '.join(ASTRO_KEYWORDS)}")
+    keyword = input(" Enter keyword: ").strip().lower()
+    matched = []
+    for i, art in enumerate(articles, 1):
+        if keyword in art["title"].lower():
+            matched.append((i, art["title"]))
+    if matched:
+        print(f"\n✅ Found '{keyword}' mentioned in:")
+        for idx, title in matched:
+            print(f"   {idx}. {title}")
     else:
-        cached_data = {}
+        print(f"\n❌ No articles mention '{keyword}' in the title.")
 
-    if query in cached_data:
-        print("results uploaded from cache")
-        return cached_data[query]
-    
-    
-    print("searching on the web...")
-    all_articles.extend(search_arxiv(query))
-    all_articles.extend(search_doaj(query))
-    all_articles.extend(search_crossref(query))
-    all_articles.extend(search_pubmed(query))
-    all_articles.extend(search_google_scholar(query))
+def run_agent():
+    cache = load_cache()
+    sources = {
+        "arxiv": search_arxiv,
+        "doaj": search_doaj,
+        "crossref": search_crossref,
+        "pubmed": search_pubmed,
+        "scholar": search_google_scholar,
+    }
 
+    while True:
+        print("\n🌐 Which site would you like to use? (arxiv / doaj / crossref / pubmed / scholar) or type 'exit' to quit:")
+        site = input(">> ").strip().lower()
+        if site == "exit":
+            print("Exiting...")
+            break
+        if site not in sources:
+            print("Invalid site. Please choose a valid source.")
+            continue
 
-    cached_data[query] = all_articles
-    with open(cache_file, 'wb') as f:
-        pickle.dump(cached_data, f)
-    
-    return all_articles
+        query = input(" Enter the astronomical object or concept you're interested in: ").strip()
+        try:
+            limit = int(input("How many articles do you want to retrieve? ").strip())
+        except ValueError:
+            print(" Please enter a valid number.")
+            continue
 
+        key = f"{site}_{query}_{limit}"
+        if key in cache:
+            print("✅ Retrieved from cache.")
+            articles = cache[key]
+        else:
+            articles = sources[site](query, limit)
+            cache[key] = articles
+            save_cache(cache)
 
-def main():
-    query = input(" Please Select a feature(exmp.: gravity, temperature): ")
-    articles = search_articles(query)
-    
-    print("\ Search Results:")
-    for idx, article in enumerate(articles):
-        print(f"{idx+1}. {article['title']}\n   authers: {article['authors']}\n   link: {article['link']}\n")
+        if not articles:
+            print("❌ No articles found.")
+            continue
 
-if __name__ == '__main__':
-    main()
+        display_articles(articles)
+        check_keywords(articles)
+
+run_agent()
