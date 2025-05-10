@@ -120,7 +120,12 @@ def search_crossref(query, limit=5):
     for item in data['message']['items']:
         results.append({
             "title": item.get("title", ["No title"])[0],
-            "authors": [author.get("given") + " " + author.get("family") for author in item.get("author", [])],
+            "authors": [
+    ((author.get("given") or "") + " " + (author.get("family") or "")).strip()
+    for author in item.get("author", [])
+    if author.get("given") or author.get("family")
+],
+
             "year": item.get("published", {}).get("date-parts", [[None]])[0][0],
             "url": item.get("URL", "")
         })
