@@ -7,6 +7,15 @@ A Python-based agent that searches for articles on astronomy topics across vario
 - Search articles on multiple platforms: arXiv, DOAJ, CrossRef, PubMed, and Google Scholar.
 - Cache results to avoid redundant searches.
 - Check for specific astronomy keywords in article titles.
+  
+##astro-agent/
+│
+├── data/
+│   └── astro_cache.pkl
+├── main.py
+├── requirements.txt
+├── README.md
+└── .gitignore
 
 ## Requirements
 
