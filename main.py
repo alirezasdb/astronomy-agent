@@ -139,7 +139,7 @@ def run_agent():
     }
 
     while True:
-        print("\n Which site would you like to use? (arxiv / nasa / pubmed / scholar / crossref) or type 'exit' to quit:")
+        print("\n Which site would you like to use? (arxiv  / pubmed / scholar / crossref) or type 'exit' to quit:")
         site = input(">> ").strip().lower()
         if site == "exit":
             print("Exiting...")
