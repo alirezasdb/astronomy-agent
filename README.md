@@ -1,6 +1,6 @@
 # Astronomy Agent 🪐
 
-A Python-based agent that searches for articles on astronomy topics across various sources (arXiv, CrossRef, PubMed, Google Scholar) and provides information about astronomical keywords.
+A Python-based agent that searches for articles on astronomy topics across various sources (arXiv, CrossRef, PubMed) and provides information about astronomical keywords.
 
 ## Features
 
