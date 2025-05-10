@@ -62,30 +62,6 @@ def search_pubmed(query, limit=5):
         })
     return results
 
-def search_scholar(query, limit=5):
-    print(f"\n Searching '{query}' in Google Scholar...")
-    url = f"https://scholar.google.com/scholar?q={query}&limit={limit}"
-    response = requests.get(url)
-    if response.status_code != 200:
-        print("❌ Error accessing Google Scholar.")
-        return []
-    soup = BeautifulSoup(response.content, "html.parser")
-    entries = soup.find_all("div", class_="gs_ri")
-    results = []
-    for entry in entries:
-        title = entry.find("h3").text
-        authors = entry.find("div", class_="gs_a").text
-        year = entry.find("div", class_="gs_a").text.split('-')[-1].strip()
-        link = entry.find("a")["href"]
-        results.append({
-            "title": title.strip(),
-            "authors": authors.strip(),
-            "year": year,
-            "url": link
-        })
-    return results
-
-
 def search_crossref(query, limit=5):
     print(f"\n Searching '{query}' in CrossRef...")
     url = f"https://api.crossref.org/works?query={query}&rows={limit}"
@@ -132,12 +108,11 @@ def run_agent():
     sources = {
         "arxiv": search_arxiv,
         "pubmed": search_pubmed,
-        "scholar": search_scholar,
         "crossref": search_crossref,  
     }
 
     while True:
-        print("\n Which site would you like to use? (arxiv  / pubmed / scholar / crossref) or type 'exit' to quit:")
+        print("\n Which site would you like to use? (arxiv  / pubmed / crossref) or type 'exit' to quit:")
         site = input(">> ").strip().lower()
         if site == "exit":
             print("Exiting...")
