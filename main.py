@@ -3,6 +3,8 @@ import pickle
 import os
 import time
 from bs4 import BeautifulSoup
+import requests
+import xml.etree.ElementTree as ET
 
 CACHE_FILE = "/content/astro_cache.pkl"
 
@@ -45,22 +47,66 @@ def search_arxiv(query, limit=5):
     return results
 
 def search_pubmed(query, limit=5):
-    print(f"\n🔍 Searching '{query}' in PubMed...")
-    url = f"https://pubmed.ncbi.nlm.nih.gov/api/query?search={query}&limit={limit}"
-    response = requests.get(url)
+    print(f" Searching '{query}' in PubMed...")
+    base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+    params = {
+        "db": "pubmed",
+        "term": query,
+        "retmax": limit,
+        "retmode": "xml"
+    }
+    response = requests.get(base_url, params=params)
+    
     if response.status_code != 200:
-        print("❌ Error accessing PubMed.")
+        print(f"❌ HTTP error: {response.status_code}")
         return []
-    data = response.json()
-    results = []
-    for item in data['articles']:
-        results.append({
-            "title": item.get("title", "No title"),
-            "authors": item.get("authors", ["Unknown"]),
-            "year": item.get("date", "Unknown").split("-")[0],
-            "url": item.get("url", "")
-        })
-    return results
+
+    try:
+        root = ET.fromstring(response.text)
+        id_list = root.find("IdList")
+        if id_list is None or len(id_list) == 0:
+            print("❌ No articles found.")
+            return []
+
+        ids = [id_elem.text for id_elem in id_list.findall("Id")]
+
+        # Get summaries
+        summary_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi"
+        summary_params = {
+            "db": "pubmed",
+            "id": ",".join(ids),
+            "retmode": "xml"
+        }
+        summary_resp = requests.get(summary_url, params=summary_params)
+        summary_root = ET.fromstring(summary_resp.text)
+
+        results = []
+        for docsum in summary_root.findall("DocSum"):
+            article = {
+                "title": "",
+                "year": "",
+                "authors": [],
+                "url": ""
+            }
+
+            for item in docsum.findall("Item"):
+                name = item.attrib.get("Name")
+                if name == "Title":
+                    article["title"] = item.text
+                elif name == "PubDate":
+                    article["year"] = item.text.split(" ")[0]
+                elif name == "AuthorList":
+                    article["authors"] = [author.text for author in item.findall("Item") if author.text]
+                elif name == "DOI":
+                    article["url"] = f"https://doi.org/{item.text}" if item.text else ""
+
+            results.append(article)
+
+        return results
+    except Exception as e:
+        print(f"❌ Error while parsing XML: {e}")
+        return []
+
 
 def search_crossref(query, limit=5):
     print(f"\n Searching '{query}' in CrossRef...")
