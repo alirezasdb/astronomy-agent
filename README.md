@@ -4,7 +4,7 @@ A Python-based agent that searches for articles on astronomy topics across vario
 
 ## Features
 
-- Search articles on multiple platforms: arXiv, DOAJ, CrossRef, PubMed, and Google Scholar.
+- Search articles on multiple platforms: arXiv, CrossRef, PubMed, and Google Scholar.
 - Cache results to avoid redundant searches.
 - Check for specific astronomy keywords in article titles.
   
