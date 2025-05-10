@@ -106,6 +106,24 @@ def search_scholar(query, limit=5):
             "url": link
         })
     return results
+    
+def search_crossref(query, limit=5):
+    print(f"\n Searching '{query}' in CrossRef...")
+    url = f"https://api.crossref.org/works?query={query}&rows={limit}"
+    response = requests.get(url)
+    if response.status_code != 200:
+        print("❌ Error accessing CrossRef API.")
+        return []
+    data = response.json()
+    results = []
+    for item in data['message']['items']:
+        results.append({
+            "title": item.get("title", ["No title"])[0],
+            "authors": [author.get("given") + " " + author.get("family") for author in item.get("author", [])],
+            "year": item.get("published", {}).get("date-parts", [[None]])[0][0],
+            "url": item.get("URL", "")
+        })
+    return results
 
 def display_articles(articles):
     for i, art in enumerate(articles, 1):
